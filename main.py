@@ -4,6 +4,8 @@
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
 import numpy as np
 import matplotlib.pyplot as plt
+from dnn.deep_nn import L_layer_model
+from dnn import dnn_utils
 
 
 def get_input(nm):
@@ -19,14 +21,16 @@ def get_input(nm):
     X[2] = (X[0]) * (X[0])
     X[3] = (X[1]) * (X[1])
     X[4] = X[0] * X[1]
-    Y1 = 2 * X[1] * X[1] - 2 * X[0] * X[0] < 0.2
-    Y2 = (2 * X[1] * X[1] - 2 * X[0] * X[0]) > 0.8
+    Y1 =  np.power(X[0]- 0.5,2) + np.power(X[1]- 0.5 , 2) < 0.15
+    Y2 = (2 * (X[1] -0.5) * (X[1] - 0.5)*(X[1] - 0.5) - 2 * X[0] * X[0]) > 0.5
     Y1 = Y1.reshape((1, 2 * nm))
     Y2 = Y2.reshape((1, 2 * nm))
-    Y = np.maximum(Y1,Y2)
+    Y = Y1 + Y2
     Y = Y.reshape((1, 2 * nm))
-    print(str(X.shape), str(Y))
-    plt.scatter(X[2, :], X[3, :], c=Y, s=40, cmap=plt.cm.Spectral)
+    n = np.linalg.norm(X, axis=0, keepdims=True)
+    # X= X/n
+    # print(str(X.shape), str(Y))
+    plt.scatter(X[0, :], X[1, :], c=Y, s=40, cmap=plt.cm.Spectral)
     plt.show()
     return X, Y
 
@@ -79,7 +83,7 @@ def updateGrad(W1, b1, dW1, db1, W2, b2, dW2, db2, learning_rate):
     return W1, b1, W2, b2
 
 
-def nn_model(X, Y, num_neurons=5, iter=10000, learning_rate=0.8):
+def nn_model(X, Y, num_neurons=5, iter=100000, learning_rate=0.8):
     W1, b1, W2, b2 = initalize(X.shape[0], num_neurons)
     # print("W =" , W)
     i = 0
@@ -110,24 +114,35 @@ def predict(W1, b1, W2, b2, X):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    np.random.seed(1)
+    np.random.seed(100)
     X, Y = get_input(1000)
     # plt.scatter(X[0, :], X[1, :], c=Y, s=40, cmap=plt.cm.Spectral)
     # plt.show()
+    layers_dim = [X.shape[0], 5,3,  1]
+    parameters = L_layer_model(X, Y, layers_dim, 0.1, 100000, True);
+    Yhat = dnn_utils.predict(X, parameters)
+    Yhat[Yhat > 0.5] = 1
+    Yhat[Yhat <= 0.5] = 0;
+    error = np.sum(np.abs((Yhat - Y)))
 
-    W1, b1, W2, b2 = nn_model(X, Y, 6, 50000, 0.015)
+    print(error *100 / X.shape[1])
+    plt.scatter(X[0, :], X[1, :], c=Yhat, s=40, cmap=plt.cm.Spectral)
+    plt.show()
+'''
+    W1, b1, W2, b2 = nn_model(X, Y, 5, 50000, 0.1)
     # X, Y = get_input(100)
     A1, A2 = forward(W1, b1, W2, b2, X)
     # print("Values ", A)
     A2[A2 > 0.5] = 1
     A2[A2 <= 0.5] = 0;
     print(A2.shape)
-    print("numberOf1s", np.sum(A2))
-    print("numberOf1s", np.sum(Y))
+    print("number Of 1s in the prediction", np.sum(A2))
+    print("number Of 1s in test case ", np.sum(Y))
     print(W1)
     print(W2)
     accuracy = np.sum(np.abs((A2 - Y)))
-    print("Error count = ", accuracy * 100 / 2000, "%")
+    print("Error % = ", accuracy * 100 / Y.shape[1], "%")
 
     plt.scatter(X[0, :], X[1, :], c=A2, s=40, cmap=plt.cm.Spectral)
     plt.show()
+    '''
